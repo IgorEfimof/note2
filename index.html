@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" sizes="180x180" href="icons/icon197.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="KST2">
+    <meta name="apple-mobile-web-app-title" content="KST1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Калькулятор пропорций</title>
     <style>
@@ -259,6 +259,14 @@
             .custom-keyboard {
                 display: block;
             }
+            
+            .switch-container {
+                flex-wrap: wrap;
+            }
+            
+            .switch-option {
+                flex: 1 0 33%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -275,14 +283,6 @@
             
             h2 {
                 font-size: 1.3rem;
-            }
-            
-            .switch-container {
-                flex-wrap: wrap;
-            }
-            
-            .switch-option {
-                flex: 1 0 33%;
             }
         }
         
@@ -333,6 +333,28 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
+        
+        .percent-steps {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .percent-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .percent-step label {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .percent-step input {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -348,7 +370,7 @@
         <div class="switch-option active" onclick="switchMode(0)">10:30:90</div>
         <div class="switch-option" onclick="switchMode(1)">10:20:30:60:120</div>
         <div class="switch-option" onclick="switchMode(2)">Свои</div>
-        <div class="switch-option" onclick="switchMode(3)">Рост на 0.38%</div>
+        <div class="switch-option" onclick="switchMode(3)">Прогрессивный рост</div>
     </div>
     
     <div class="split-section">
@@ -398,7 +420,25 @@
             <label for="steps-count">Количество шагов:</label>
             <input type="text" id="steps-count" inputmode="none" readonly placeholder="Например: 5" value="5" onfocus="showKeyboard(this)">
         </div>
-        <div class="input-hint">Каждое следующее значение будет больше предыдущего на 0.38%</div>
+        <div class="percent-steps">
+            <div class="percent-step">
+                <label for="step2-percent">Шаг 2, %:</label>
+                <input type="text" id="step2-percent" inputmode="none" readonly value="0.38" onfocus="showKeyboard(this)">
+            </div>
+            <div class="percent-step">
+                <label for="step3-percent">Шаг 3, %:</label>
+                <input type="text" id="step3-percent" inputmode="none" readonly value="0.30" onfocus="showKeyboard(this)">
+            </div>
+            <div class="percent-step">
+                <label for="step4-percent">Шаг 4, %:</label>
+                <input type="text" id="step4-percent" inputmode="none" readonly value="0.25" onfocus="showKeyboard(this)">
+            </div>
+            <div class="percent-step">
+                <label for="step5-percent">Шаг 5, %:</label>
+                <input type="text" id="step5-percent" inputmode="none" readonly value="0.20" onfocus="showKeyboard(this)">
+            </div>
+        </div>
+        <div class="input-hint">Каждое следующее значение должно перекрывать сумму всех предыдущих на указанный процент</div>
     </div>
     
     <button onclick="calculate()">Рассчитать</button>
@@ -532,7 +572,7 @@
                 
                 calculateAndDisplayResult(total, multiplier, ratios, customRatiosInput.replace(/,/g, " : "));
             } else if (currentMode === 3) {
-                // Новый режим: рост на 0.38%
+                // Новый режим: прогрессивный рост
                 const baseValue = parseFloat(document.getElementById('base-value').value);
                 const stepsCount = parseInt(document.getElementById('steps-count').value) || 5;
                 
@@ -546,7 +586,15 @@
                     return;
                 }
                 
-                calculateAndDisplayGrowth(baseValue, multiplier, stepsCount);
+                // Получаем проценты для каждого шага
+                const stepPercents = [
+                    parseFloat(document.getElementById('step2-percent').value) || 0,
+                    parseFloat(document.getElementById('step3-percent').value) || 0,
+                    parseFloat(document.getElementById('step4-percent').value) || 0,
+                    parseFloat(document.getElementById('step5-percent').value) || 0
+                ];
+                
+                calculateAndDisplayProgressiveGrowth(baseValue, multiplier, stepsCount, stepPercents);
             }
             
             // Сохраняем данные
@@ -592,29 +640,44 @@
             document.getElementById('result').style.display = 'block';
         }
         
-        function calculateAndDisplayGrowth(baseValue, multiplier, stepsCount) {
+        function calculateAndDisplayProgressiveGrowth(baseValue, multiplier, stepsCount, stepPercents) {
             let resultHTML = `
                 <strong>Базовое значение:</strong> ${baseValue}<br>
                 <strong>Коэффициент:</strong> ${multiplier}<br>
-                <strong>Количество шагов:</strong> ${stepsCount}<br>
-                <strong>Процент роста:</strong> 0.38%<br><br>
-                <strong>Результат:</strong><br>
+                <strong>Количество шагов:</strong> ${stepsCount}<br><br>
+                <strong>Проценты для шагов:</strong><br>
             `;
             
-            let currentValue = baseValue;
-            let totalSum = 0;
-            
-            for (let i = 1; i <= stepsCount; i++) {
-                const valueAfterMultiplier = Math.round(currentValue * multiplier * 100) / 100;
-                totalSum += valueAfterMultiplier;
-                
-                resultHTML += `• Шаг ${i}: ${currentValue} × ${multiplier} = ${valueAfterMultiplier}<br>`;
-                
-                // Увеличиваем текущее значение на 0.38%
-                currentValue = Math.round(currentValue * 1.0038 * 100) / 100;
+            // Отображаем проценты для каждого шага
+            for (let i = 0; i < stepPercents.length && i < stepsCount - 1; i++) {
+                resultHTML += `• Шаг ${i + 2}: ${stepPercents[i]}%<br>`;
             }
             
-            resultHTML += `<br><strong>Общая сумма:</strong> ${Math.round(totalSum * 100) / 100}`;
+            resultHTML += `<br><strong>Результат:</strong><br>`;
+            
+            // Рассчитываем значения для каждого шага
+            const values = [baseValue];
+            const multipliedValues = [baseValue * multiplier];
+            let currentSum = baseValue;
+            
+            resultHTML += `• Шаг 1: ${baseValue} × ${multiplier} = ${multipliedValues[0].toFixed(2)}<br>`;
+            
+            for (let i = 1; i < stepsCount; i++) {
+                // Процент для текущего шага (используем i-1, так как stepPercents начинается с шага 2)
+                const percent = i <= stepPercents.length ? stepPercents[i-1] : 0;
+                
+                // Рассчитываем следующее значение так, чтобы оно перекрывало сумму всех предыдущих на указанный процент
+                const nextValue = (currentSum * (1 + percent/100)) / (multiplier - 1);
+                values.push(nextValue);
+                multipliedValues.push(nextValue * multiplier);
+                currentSum += nextValue;
+                
+                resultHTML += `• Шаг ${i+1}: ${nextValue.toFixed(2)} × ${multiplier} = ${multipliedValues[i].toFixed(2)} (перекрывает сумму на ${percent}%)<br>`;
+            }
+            
+            resultHTML += `<br><strong>Общая сумма вложений:</strong> ${currentSum.toFixed(2)}<br>`;
+            resultHTML += `<strong>Общая сумма после умножения:</strong> ${multipliedValues.reduce((a, b) => a + b, 0).toFixed(2)}<br>`;
+            resultHTML += `<strong>Прибыль:</strong> ${(multipliedValues.reduce((a, b) => a + b, 0) - currentSum).toFixed(2)}`;
             
             // Выводим результат
             document.getElementById('resultText').innerHTML = resultHTML;
@@ -720,7 +783,11 @@
                 multiplier: document.getElementById('multiplier').value,
                 customRatios: document.getElementById('custom-ratios').value,
                 baseValue: document.getElementById('base-value').value,
-                stepsCount: document.getElementById('steps-count').value
+                stepsCount: document.getElementById('steps-count').value,
+                step2Percent: document.getElementById('step2-percent').value,
+                step3Percent: document.getElementById('step3-percent').value,
+                step4Percent: document.getElementById('step4-percent').value,
+                step5Percent: document.getElementById('step5-percent').value
             };
             
             localStorage.setItem('ratioCalculatorData', JSON.stringify(data));
@@ -741,6 +808,10 @@
                 document.getElementById('custom-ratios').value = data.customRatios || '';
                 document.getElementById('base-value').value = data.baseValue || '10';
                 document.getElementById('steps-count').value = data.stepsCount || '5';
+                document.getElementById('step2-percent').value = data.step2Percent || '0.38';
+                document.getElementById('step3-percent').value = data.step3Percent || '0.30';
+                document.getElementById('step4-percent').value = data.step4Percent || '0.25';
+                document.getElementById('step5-percent').value = data.step5Percent || '0.20';
             }
         }
     </script>
