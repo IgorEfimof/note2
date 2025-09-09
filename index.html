@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon197.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KST1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Калькулятор пропорций</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --bg-color: #f9f9f9;
+            --text-color: #333;
+            --input-bg: #fff;
+            --input-border: #ddd;
+            --result-bg: #f1f1f1;
+            --keyboard-bg: #f0f0f0;
+            --key-bg: #fff;
+            --key-shadow: rgba(0, 0, 0, 0.1);
+            --switch-bg: #e0e0e0;
+            --section-bg: #fff;
+            --section-border: #e0e0e0;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #2E7D32;
+            --primary-hover: #1B5E20;
+            --bg-color: #1e1e1e;
+            --text-color: #f1f1f1;
+            --input-bg: #2d2d2d;
+            --input-border: #444;
+            --result-bg: #2d2d2d;
+            --keyboard-bg: #333;
+            --key-bg: #2d2d2d;
+            --key-shadow: rgba(0, 0, 0, 0.3);
+            --switch-bg: #444;
+            --section-bg: #2d2d2d;
+            --section-border: #444;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--switch-bg);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            caret-color: transparent;
+        }
+
+        input:read-only {
+            background-color: var(--input-bg);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--result-bg);
+            border-radius: 5px;
+        }
+
+        .switch-container {
+            display: flex;
+            margin-bottom: 20px;
+            border: 1px solid var(--input-border);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .switch-option {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            background-color: var(--result-bg);
+            transition: background-color 0.3s;
+        }
+
+        .switch-option.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .ratio-presets {
+            display: none;
+        }
+
+        .ratio-presets.active {
+            display: block;
+        }
+
+        .custom-ratios-input {
+            margin-top: 10px;
+        }
+
+        /* Кастомная клавиатура */
+        .custom-keyboard {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--keyboard-bg);
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .keyboard-key {
+            flex: 1;
+            max-width: 60px;
+            height: 45px;
+            margin: 0 4px;
+            background-color: var(--key-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 2px 4px var(--key-shadow);
+            transition: background-color 0.1s;
+        }
+
+        .keyboard-key:active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .keyboard-wide {
+            flex: 2;
+            max-width: 120px;
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            input {
+                font-size: 16px;
+                padding: 14px;
+            }
+            
+            .custom-keyboard {
+                display: block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .switch-option {
+                padding: 8px 5px;
+                font-size: 14px;
+            }
+            
+            .keyboard-key {
+                height: 40px;
+                margin: 0 3px;
+                font-size: 16px;
+            }
+            
+            h2 {
+                font-size: 1.3rem;
+            }
+            
+            .switch-container {
+                flex-wrap: wrap;
+            }
+            
+            .switch-option {
+                flex: 1 0 33%;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .input-hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        
+        /* Стили для разделения на две части */
+        .split-section {
+            background-color: var(--section-bg);
+            border: 1px solid var(--section-border);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .split-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .split-container {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .split-part {
+            flex: 1;
+        }
+        
+        @media (max-width: 480px) {
+            .split-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+        
+        .percent-growth-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Калькулятор пропорций</h2>
+        <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+    
+    <div class="switch-container">
+        <div class="switch-option active" onclick="switchMode(0)">10:30:90</div>
+        <div class="switch-option" onclick="switchMode(1)">10:20:30:60:120</div>
+        <div class="switch-option" onclick="switchMode(2)">Свои</div>
+        <div class="switch-option" onclick="switchMode(3)">Рост на 0.38%</div>
+    </div>
+    
+    <div class="split-section">
+        <h3>Итоговая сумма</h3>
+        <div class="split-container">
+            <div class="split-part">
+                <div class="input-group">
+                    <label for="total" id="total-label">Общая сумма:</label>
+                    <input type="text" id="total" inputmode="none" readonly placeholder="Например: 185" onfocus="showKeyboard(this)">
+                </div>
+            </div>
+            <div class="split-part">
+                <div class="input-group">
+                    <label for="multiplier">Коэффициент:</label>
+                    <input type="text" id="multiplier" inputmode="none" readonly placeholder="Например: 1.5" value="1" onfocus="showKeyboard(this)">
+                </div>
+            </div>
+        </div>
+        <div class="input-hint">Общая сумма распределяется по пропорциям, затем умножается на коэффициент</div>
+    </div>
+    
+    <div class="ratio-presets active" id="preset1">
+        <div class="input-group">
+            <label>Пропорции: 10 : 30 : 90</label>
+        </div>
+    </div>
+    
+    <div class="ratio-presets" id="preset2">
+        <div class="input-group">
+            <label>Пропорции: 10 : 20 : 30 : 60 : 120</label>
+        </div>
+    </div>
+    
+    <div class="ratio-presets" id="preset3">
+        <div class="input-group">
+            <label for="custom-ratios">Введите свои пропорции (через запятую):</label>
+            <input type="text" id="custom-ratios" inputmode="none" readonly placeholder="Например: 10,30,90" onfocus="showKeyboard(this)">
+        </div>
+    </div>
+    
+    <div class="ratio-presets" id="preset4">
+        <div class="input-group">
+            <label for="base-value">Базовое значение:</label>
+            <input type="text" id="base-value" inputmode="none" readonly placeholder="Например: 10" value="10" onfocus="showKeyboard(this)">
+        </div>
+        <div class="input-group">
+            <label for="steps-count">Количество шагов:</label>
+            <input type="text" id="steps-count" inputmode="none" readonly placeholder="Например: 5" value="5" onfocus="showKeyboard(this)">
+        </div>
+        <div class="input-hint">Каждое следующее значение будет больше предыдущего на 0.38%</div>
+    </div>
+    
+    <button onclick="calculate()">Рассчитать</button>
+    
+    <div id="result" class="result" style="display: none;">
+        <h3>Результат:</h3>
+        <p id="resultText"></p>
+    </div>
+    
+    <!-- Кастомная клавиатура -->
+    <div class="custom-keyboard" id="custom-keyboard">
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="pressKey('7')">7</div>
+            <div class="keyboard-key" onclick="pressKey('8')">8</div>
+            <div class="keyboard-key" onclick="pressKey('9')">9</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="pressKey('4')">4</div>
+            <div class="keyboard-key" onclick="pressKey('5')">5</div>
+            <div class="keyboard-key" onclick="pressKey('6')">6</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="pressKey('1')">1</div>
+            <div class="keyboard-key" onclick="pressKey('2')">2</div>
+            <div class="keyboard-key" onclick="pressKey('3')">3</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key" onclick="pressKey('0')">0</div>
+            <div class="keyboard-key" onclick="pressKey('.')">.</div>
+            <div class="keyboard-key" onclick="pressKey(',')">,</div>
+        </div>
+        <div class="keyboard-row">
+            <div class="keyboard-key keyboard-wide" onclick="backspace()">⌫</div>
+            <div class="keyboard-key keyboard-wide" onclick="hideKeyboard()">Готово</div>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = 0;
+        let activeInput = null;
+        
+        // Загрузка сохраненных данных при запуске
+        window.addEventListener('DOMContentLoaded', (event) => {
+            loadSavedData();
+            setupTheme();
+            
+            // Обработка клика вне поля ввода
+            document.addEventListener('click', function(event) {
+                if (activeInput && !event.target.closest('.custom-keyboard') && 
+                    event.target !== activeInput) {
+                    hideKeyboard();
+                }
+            });
+        });
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.switch-option').forEach((el, index) => {
+                el.classList.toggle('active', index === mode);
+            });
+            document.querySelectorAll('.ratio-presets').forEach((el, index) => {
+                el.classList.toggle('active', index === mode);
+            });
+            
+            // Обновляем подпись для поля ввода в зависимости от режима
+            const totalLabel = document.getElementById('total-label');
+            if (mode === 3) {
+                totalLabel.textContent = 'Начальное значение:';
+            } else {
+                totalLabel.textContent = 'Общая сумма:';
+            }
+            
+            // Автоматически активируем поле ввода пропорций в режиме "Свои"
+            if (mode === 2) {
+                setTimeout(() => {
+                    const customRatiosInput = document.getElementById('custom-ratios');
+                    customRatiosInput.focus();
+                    showKeyboard(customRatiosInput);
+                }, 100);
+            }
+            
+            // Сохраняем выбранный режим
+            saveData();
+        }
+        
+        function calculate() {
+            // Получаем значения из полей ввода
+            const total = parseFloat(document.getElementById('total').value);
+            const multiplier = parseFloat(document.getElementById('multiplier').value) || 1;
+            
+            let resultText;
+            
+            if (currentMode === 0) {
+                // Режим 10:30:90
+                if (isNaN(total)) {
+                    alert("Пожалуйста, введите сумму!");
+                    return;
+                }
+                const ratios = [10, 30, 90];
+                calculateAndDisplayResult(total, multiplier, ratios, "10 : 30 : 90");
+            } else if (currentMode === 1) {
+                // Режим 10:20:30:60:120
+                if (isNaN(total)) {
+                    alert("Пожалуйста, введите сумму!");
+                    return;
+                }
+                const ratios = [10, 20, 30, 60, 120];
+                calculateAndDisplayResult(total, multiplier, ratios, "10 : 20 : 30 : 60 : 120");
+            } else if (currentMode === 2) {
+                // Пользовательский режим
+                if (isNaN(total)) {
+                    alert("Пожалуйста, введите сумму!");
+                    return;
+                }
+                const customRatiosInput = document.getElementById('custom-ratios').value;
+                if (!customRatiosInput) {
+                    alert("Пожалуйста, введите пропорции!");
+                    return;
+                }
+                
+                // Преобразуем ввод в массив чисел
+                const ratios = customRatiosInput.split(',').map(ratio => {
+                    const num = parseFloat(ratio.trim());
+                    return isNaN(num) ? 0 : num;
+                }).filter(ratio => ratio > 0);
+                
+                if (ratios.length === 0) {
+                    alert("Пожалуйста, введите корректные пропорции!");
+                    return;
+                }
+                
+                calculateAndDisplayResult(total, multiplier, ratios, customRatiosInput.replace(/,/g, " : "));
+            } else if (currentMode === 3) {
+                // Новый режим: рост на 0.38%
+                const baseValue = parseFloat(document.getElementById('base-value').value);
+                const stepsCount = parseInt(document.getElementById('steps-count').value) || 5;
+                
+                if (isNaN(baseValue)) {
+                    alert("Пожалуйста, введите базовое значение!");
+                    return;
+                }
+                
+                if (isNaN(stepsCount) || stepsCount < 1) {
+                    alert("Пожалуйста, введите корректное количество шагов!");
+                    return;
+                }
+                
+                calculateAndDisplayGrowth(baseValue, multiplier, stepsCount);
+            }
+            
+            // Сохраняем данные
+            saveData();
+        }
+        
+        function calculateAndDisplayResult(total, multiplier, ratios, ratioText) {
+            const sumRatios = ratios.reduce((a, b) => a + b, 0);
+            const k = total / sumRatios;
+            
+            // Рассчитываем значения по пропорциям
+            const values = ratios.map(ratio => Math.round(ratio * k * 100) / 100);
+            const sumValues = values.reduce((a, b) => a + b, 0);
+            
+            // Применяем коэффициент умножения
+            const multipliedValues = values.map(value => Math.round(value * multiplier * 100) / 100);
+            const sumMultipliedValues = multipliedValues.reduce((a, b) => a + b, 0);
+            
+            let resultHTML = `
+                <strong>Пропорции:</strong> ${ratioText}<br>
+                <strong>Итоговая сумма:</strong> ${total}<br>
+                <strong>Коэффициент:</strong> ${multiplier}<br><br>
+                <strong>Результат (до применения коэффициента):</strong><br>
+            `;
+            
+            values.forEach((value, index) => {
+                resultHTML += `• ${ratios[index]} → ${value}<br>`;
+            });
+            
+            resultHTML += `<br><strong>Результат (после применения коэффициента):</strong><br>`;
+            
+            multipliedValues.forEach((value, index) => {
+                resultHTML += `• ${ratios[index]} → ${value}<br>`;
+            });
+            
+            resultHTML += `
+                <br><strong>Проверка пропорций:</strong> ${values.join(' + ')} = ${sumValues.toFixed(2)}<br>
+                <strong>Проверка с коэффициентом:</strong> ${multipliedValues.join(' + ')} = ${sumMultipliedValues.toFixed(2)}
+            `;
+            
+            // Выводим результат
+            document.getElementById('resultText').innerHTML = resultHTML;
+            document.getElementById('result').style.display = 'block';
+        }
+        
+        function calculateAndDisplayGrowth(baseValue, multiplier, stepsCount) {
+            let resultHTML = `
+                <strong>Базовое значение:</strong> ${baseValue}<br>
+                <strong>Коэффициент:</strong> ${multiplier}<br>
+                <strong>Количество шагов:</strong> ${stepsCount}<br>
+                <strong>Процент роста:</strong> 0.38%<br><br>
+                <strong>Результат:</strong><br>
+            `;
+            
+            let currentValue = baseValue;
+            let totalSum = 0;
+            
+            for (let i = 1; i <= stepsCount; i++) {
+                const valueAfterMultiplier = Math.round(currentValue * multiplier * 100) / 100;
+                totalSum += valueAfterMultiplier;
+                
+                resultHTML += `• Шаг ${i}: ${currentValue} × ${multiplier} = ${valueAfterMultiplier}<br>`;
+                
+                // Увеличиваем текущее значение на 0.38%
+                currentValue = Math.round(currentValue * 1.0038 * 100) / 100;
+            }
+            
+            resultHTML += `<br><strong>Общая сумма:</strong> ${Math.round(totalSum * 100) / 100}`;
+            
+            // Выводим результат
+            document.getElementById('resultText').innerHTML = resultHTML;
+            document.getElementById('result').style.display = 'block';
+        }
+        
+        // Функции для кастомной клавиатуры
+        function showKeyboard(input) {
+            activeInput = input;
+            document.getElementById('custom-keyboard').style.display = 'block';
+            
+            // Прячем системную клавиатуру на iOS
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                input.setAttribute('readonly', 'readonly');
+                setTimeout(() => {
+                    input.blur();
+                }, 0);
+            }
+        }
+        
+        function hideKeyboard() {
+            document.getElementById('custom-keyboard').style.display = 'none';
+            if (activeInput) {
+                activeInput.removeAttribute('readonly');
+                activeInput.blur();
+            }
+            activeInput = null;
+        }
+        
+        function pressKey(key) {
+            if (!activeInput) return;
+            
+            const start = activeInput.selectionStart;
+            const end = activeInput.selectionEnd;
+            const value = activeInput.value;
+            
+            if (key === ',' && activeInput.id === 'custom-ratios') {
+                // Для поля с пропорциями заменяем запятую на разделитель
+                activeInput.value = value.substring(0, start) + ',' + value.substring(end);
+            } else {
+                activeInput.value = value.substring(0, start) + key + value.substring(end);
+            }
+            
+            // Устанавливаем позицию курсора после вставленного символа
+            const newPosition = start + key.length;
+            setTimeout(() => {
+                activeInput.setSelectionRange(newPosition, newPosition);
+            }, 0);
+            
+            // Сохраняем данные при изменении
+            saveData();
+        }
+        
+        function backspace() {
+            if (!activeInput) return;
+            
+            const start = activeInput.selectionStart;
+            const end = activeInput.selectionEnd;
+            const value = activeInput.value;
+            
+            if (start === end && start > 0) {
+                // Удаляем один символ перед курсором
+                activeInput.value = value.substring(0, start - 1) + value.substring(end);
+                setTimeout(() => {
+                    activeInput.setSelectionRange(start - 1, start - 1);
+                }, 0);
+            } else if (start !== end) {
+                // Удаляем выделенный текст
+                activeInput.value = value.substring(0, start) + value.substring(end);
+                setTimeout(() => {
+                    activeInput.setSelectionRange(start, start);
+                }, 0);
+            }
+            
+            // Сохраняем данные при изменении
+            saveData();
+        }
+        
+        // Функции для темы
+        function setupTheme() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.checked = savedTheme === 'dark';
+            
+            themeToggle.addEventListener('change', function() {
+                if (this.checked) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        }
+        
+        // Функции для сохранения и загрузки данных
+        function saveData() {
+            const data = {
+                mode: currentMode,
+                total: document.getElementById('total').value,
+                multiplier: document.getElementById('multiplier').value,
+                customRatios: document.getElementById('custom-ratios').value,
+                baseValue: document.getElementById('base-value').value,
+                stepsCount: document.getElementById('steps-count').value
+            };
+            
+            localStorage.setItem('ratioCalculatorData', JSON.stringify(data));
+        }
+        
+        function loadSavedData() {
+            const savedData = localStorage.getItem('ratioCalculatorData');
+            
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                
+                // Восстанавливаем режим
+                switchMode(data.mode || 0);
+                
+                // Восстанавливаем значения полей
+                document.getElementById('total').value = data.total || '';
+                document.getElementById('multiplier').value = data.multiplier || '1';
+                document.getElementById('custom-ratios').value = data.customRatios || '';
+                document.getElementById('base-value').value = data.baseValue || '10';
+                document.getElementById('steps-count').value = data.stepsCount || '5';
+            }
+        }
+    </script>
+</body>
+</html>
